@@ -2,6 +2,7 @@ package com.example.news_app
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -66,6 +67,8 @@ class Headlines : ComponentActivity() {
     lateinit var head_viewmodel: HeadlineViewModel;
     override fun onCreate(savedInstanceState: Bundle?) {
         head_viewmodel=ViewModelProvider(this)[HeadlineViewModel :: class.java]
+        val view_m=ViewModelProvider(this)[Main_ViewModel :: class.java]
+
         val location=intent.getStringExtra("state")
 
         val country="in";
@@ -102,7 +105,7 @@ class Headlines : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     if (categ != null) {
-                        Greeting2(categ,head_viewmodel)
+                        Greeting2(categ,location,view_m,head_viewmodel,this)
                     }
                 }
             }
@@ -112,10 +115,14 @@ class Headlines : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Greeting2(name: String, viewmodel : HeadlineViewModel, modifier: Modifier = Modifier) {
+fun Greeting2(name: String, location: String?, view_m: Main_ViewModel, viewmodel : HeadlineViewModel, context: Context, modifier: Modifier = Modifier) {
 
     val news_list by viewmodel.news_titles.observeAsState()
     val cont= LocalContext.current
+
+    var head: String
+    if(location!=null) head = location
+    else head = name
 
 
     Scaffold(modifier = Modifier.fillMaxSize(),
@@ -128,7 +135,7 @@ fun Greeting2(name: String, viewmodel : HeadlineViewModel, modifier: Modifier = 
                 ),
                 title = {
                     Text(
-                        text = "Headlines - $name",
+                        text = "Headlines - $head",
                         style = TextStyle(fontStyle = FontStyle.Italic, fontSize = 30.sp)
                     )
                 }
@@ -163,7 +170,64 @@ fun Greeting2(name: String, viewmodel : HeadlineViewModel, modifier: Modifier = 
                         )
                     }
                     Spacer(modifier = Modifier.padding(10.dp))
-                    IconButton(onClick = {}, modifier = Modifier.size(32.dp)) {
+                    IconButton(onClick = {
+
+                        val locationprov =
+                            LocationServices.getFusedLocationProviderClient(cont as Activity);
+
+                        if (ActivityCompat.checkSelfPermission(
+                                cont.applicationContext,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                            ) == PackageManager.PERMISSION_DENIED
+                        ) {
+                            ActivityCompat.requestPermissions(
+                                cont as Activity, arrayOf(
+                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                ), 101
+                            )
+                        }
+                        val loc =
+                            locationprov.getCurrentLocation(
+                                Priority.PRIORITY_HIGH_ACCURACY,
+                                object :
+                                    CancellationToken() {
+                                    override fun onCanceledRequested(p0: OnTokenCanceledListener) =
+                                        CancellationTokenSource().token
+
+                                    override fun isCancellationRequested() = false
+                                })
+                        var lat: Float? = null;
+                        var long: Float? = null;
+
+
+                        GlobalScope.launch {
+
+                            loc.addOnSuccessListener {
+
+                                lat = it.latitude.toFloat()
+                                long = it.longitude.toFloat()
+
+                                Log.d(
+                                    "shivamLocation",
+                                    "Latitde : ${it.latitude} Longitude : ${it.longitude}"
+                                )
+
+
+                            }
+                            while(lat==null || long==null){}
+
+                            val state = view_m.getstate(lat!!, long!!, context)
+
+
+                            val int = Intent(cont, Headlines::class.java)
+
+                            int.putExtra("category", "Local News");
+                            int.putExtra("state", state)
+                            cont.startActivity(int)
+
+                        }
+
+                    }, modifier = Modifier.size(32.dp)) {
                         Icon(
                             painter = painterResource(id = R.drawable.local6),
                             contentDescription = "Local News"
@@ -211,10 +275,7 @@ fun Greeting2(name: String, viewmodel : HeadlineViewModel, modifier: Modifier = 
 
         }
     }
-//    Text(
-//        text = "Hello $name!",
-//        modifier = modifier
-//    )
+
 }
 
 //@Preview(showBackground = true)

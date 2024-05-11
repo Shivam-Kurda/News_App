@@ -2,6 +2,7 @@ package com.example.news_app
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -70,7 +71,7 @@ class News_Content : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Greeting3("Android",web_url,view_m)
+                    Greeting3("Android",web_url,view_m, this)
                 }
             }
         }
@@ -79,7 +80,7 @@ class News_Content : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Greeting3(name: String, web_url: String?, view_m: Main_ViewModel, modifier: Modifier = Modifier) {
+fun Greeting3(name: String, web_url: String?, view_m: Main_ViewModel, context: Context, modifier: Modifier = Modifier) {
 
     val cont = LocalContext.current
 
@@ -156,8 +157,8 @@ fun Greeting3(name: String, web_url: String?, view_m: Main_ViewModel, modifier: 
 
                                     override fun isCancellationRequested() = false
                                 })
-                        var lat = 28.7f;
-                        var long = 27.1f;
+                        var lat: Float? = null;
+                        var long: Float? = null;
 
 
                         GlobalScope.launch {
@@ -174,8 +175,9 @@ fun Greeting3(name: String, web_url: String?, view_m: Main_ViewModel, modifier: 
 
 
                             }
+                            while(lat==null || long==null){}
 
-                            val state = view_m.getstate(lat, long)
+                            val state = view_m.getstate(lat!!, long!!, context)
 
 
                             val int = Intent(cont, Headlines::class.java)

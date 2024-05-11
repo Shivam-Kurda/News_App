@@ -2,6 +2,7 @@ package com.example.news_app
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -23,14 +24,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,13 +41,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
@@ -62,9 +56,10 @@ import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationToken
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.android.gms.tasks.OnTokenCanceledListener
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlin.properties.Delegates
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,6 +69,7 @@ class MainActivity : ComponentActivity() {
 //        val src_ids= mutableListOf("google-news-in", "the-hindu", "the-times-of-india")
         super.onCreate(savedInstanceState)
         val view_m=ViewModelProvider(this)[Main_ViewModel :: class.java]
+
         setContent {
             News_AppTheme {
                 // A surface container using the 'background' color from the theme
@@ -81,7 +77,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Greeting("Android",news_categs,view_m)
+                    Greeting("Android",news_categs,view_m, this)
                 }
             }
         }
@@ -90,7 +86,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Greeting(name: String, news_categs : MutableList<String>,view_m : Main_ViewModel,modifier: Modifier = Modifier) {
+fun Greeting(name: String, news_categs : MutableList<String>, view_m : Main_ViewModel, context: Context, modifier: Modifier = Modifier) {
     val cont= LocalContext.current
 
     val icons : List<Int> = listOf(
@@ -172,8 +168,8 @@ fun Greeting(name: String, news_categs : MutableList<String>,view_m : Main_ViewM
 
                                     override fun isCancellationRequested() = false
                                 })
-                        var lat = 28.7f;
-                        var long = 27.1f;
+                        var lat: Float? = null
+                        var long: Float? = null
 
 
                         GlobalScope.launch {
@@ -188,13 +184,17 @@ fun Greeting(name: String, news_categs : MutableList<String>,view_m : Main_ViewM
                                     "Latitde : ${it.latitude} Longitude : ${it.longitude}"
                                 )
 
-
                             }
+                           while(lat==null || long==null){}
 
-                            val state = view_m.getstate(lat, long)
+                            val state = view_m.getstate(lat!!, long!!, context)
+
+
 
 
                             val int = Intent(cont, Headlines::class.java)
+
+                            Log.d("debugg", "state -> $state")
 
                             int.putExtra("category", "Local News");
                             int.putExtra("state", state)
@@ -237,7 +237,6 @@ fun Greeting(name: String, news_categs : MutableList<String>,view_m : Main_ViewM
             Spacer(modifier = Modifier.padding(12.dp))
 
             for (i in news_categs) {
-                Log.d("debugg","iter-> $iter")
                 //Divider(color = Color.Gray, thickness = 1.dp, modifier = Modifier.padding(6.dp))
                 Box(
                     modifier = Modifier
@@ -259,72 +258,9 @@ fun Greeting(name: String, news_categs : MutableList<String>,view_m : Main_ViewM
                                 .weight(75f)
                                 .shadow(8.dp)
                                 .clickable {
-
-//                                    if (i == "Local News") {
-//                                        val locationprov =
-//                                            LocationServices.getFusedLocationProviderClient(cont as Activity);
-//
-//                                        if (ActivityCompat.checkSelfPermission(
-//                                                cont.applicationContext,
-//                                                Manifest.permission.ACCESS_COARSE_LOCATION
-//                                            ) == PackageManager.PERMISSION_DENIED
-//                                        ) {
-//                                            ActivityCompat.requestPermissions(
-//                                                cont as Activity, arrayOf(
-//                                                    Manifest.permission.ACCESS_COARSE_LOCATION
-//                                                ), 101
-//                                            )
-//                                        }
-//                                        val loc =
-//                                            locationprov.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY,
-//                                                object :
-//                                                    CancellationToken() {
-//                                                    override fun onCanceledRequested(p0: OnTokenCanceledListener) =
-//                                                        CancellationTokenSource().token
-//
-//                                                    override fun isCancellationRequested() = false
-//                                                })
-//                                        var lat = 28.7f;
-//                                        var long = 27.1f;
-//
-//
-//                                        GlobalScope.launch {
-//
-//                                            loc.addOnSuccessListener {
-//
-//                                                lat = it.latitude.toFloat()
-//                                                long = it.longitude.toFloat()
-//
-//
-//
-//
-//
-//                                                Log.d(
-//                                                    "shivamLocation",
-//                                                    "Latitde : ${it.latitude} Longitude : ${it.longitude}"
-//                                                )
-//
-//
-//                                            }
-//
-//                                            val state = view_m.getstate(lat, long)
-//
-//
-//                                            val int = Intent(cont, Headlines::class.java)
-//
-//                                            int.putExtra("category", i);
-//                                            int.putExtra("state", state)
-//                                            cont.startActivity(int)
-//
-//                                        }
-//
-//
-//                                    }
-
                                         val int = Intent(cont, Headlines::class.java)
                                         int.putExtra("category", i);
                                         cont.startActivity(int)
-
                                 },
                             colors = CardDefaults.cardColors(
                                 containerColor = Color.Red
@@ -358,10 +294,7 @@ fun Greeting(name: String, news_categs : MutableList<String>,view_m : Main_ViewM
 
 
     }
-//    Text(
-//        text = "Hello $name!",
-//        modifier = modifier
-//    )
+
 }
 
 //@Preview(showBackground = true)
