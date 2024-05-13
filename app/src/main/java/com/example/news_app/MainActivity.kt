@@ -51,14 +51,13 @@ import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.ViewModelProvider
 import com.example.news_app.ui.theme.News_AppTheme
+import com.example.news_app.view_models.Main_ViewModel
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationToken
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.android.gms.tasks.OnTokenCanceledListener
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -188,6 +187,8 @@ fun Greeting(name: String, news_categs : MutableList<String>, view_m : Main_View
                            while(lat==null || long==null){}
 
                             val state = view_m.getstate(lat!!, long!!, context)
+
+                            Log.d("shivamstate",state);
 
 
 
